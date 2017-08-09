@@ -1,4 +1,4 @@
-package main
+package SM2
 
 import (
 	"fmt"
