@@ -1,5 +1,5 @@
 //2017年7月23日16:02:55 czn
-package main
+package SM3
 
 import(
 	"fmt"
@@ -23,9 +23,11 @@ func sm3_rotl32(x ,y uint32) uint32{
 	return (x << y) | (x >> (32 - y))
 }
 
-/*func sm3_rotr32(x ,y uint32) uint32{
+/*
+func sm3_rotr32(x ,y uint32) uint32{
 	return (x >> y) | (x << (32 - y))
-}*/
+}
+*/
 
 func sm3_p1(x uint32) uint32{
 	return x ^ sm3_rotl32(x,15) ^ sm3_rotl32(x,23)
@@ -281,7 +283,7 @@ func memcmp ( buf1 []uint8, buf2 []uint8,count int) int {
 	return int(buf1[i] - buf2[i])
 }
 
-func main(){//test
+func Self_Test(){//test
 	var msg1  = [3] uint8 {0x61,0x62,0x63}
 	var msglen1 int = 3
 	var msghash1 = make([]uint8,32,32)
@@ -304,6 +306,13 @@ func main(){//test
 	}else {
 		fmt.Println("error!")
 	}
+}
 
+func SM3_To_256(Msg [] uint8) []uint8{
+	var Msg_hash = make([]uint8,32,32)
+	var Msg_len = len(Msg)
 
+	sm3_256(Msg, Msg_len, Msg_hash)
+
+	return Msg_hash
 }
