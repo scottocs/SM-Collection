@@ -21,10 +21,6 @@ func SM3_rotl32(x, y uint32) uint32 {
 	return (x << y) | (x >> (32 - y))
 }
 
-/*func SM3_rotr32(x ,y uint32) uint32{
-	return (x >> y) | (x << (32 - y))
-}*/
-
 func SM3_p1(x uint32) uint32 {
 	return x ^ SM3_rotl32(x, 15) ^ SM3_rotl32(x, 23)
 }
@@ -177,7 +173,6 @@ func SM3_init(md *SM3_STATE) {
 	md.state[6] = SM3_ivg
 	md.state[7] = SM3_ivh
 }
-
 
 func SM3_compress(md *SM3_STATE) {
 	var w [68]uint32

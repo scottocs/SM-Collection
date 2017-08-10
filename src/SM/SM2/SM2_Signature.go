@@ -1,38 +1,10 @@
 package SM2
 
-func Test_Zero(x Big) int {
-	var zero Big
-	zero = Mirvar(0)
-	if compare(x, zero) == 0 {
-		return 1
-	} else {
-		return 0
-	}
-}
-
-func Test_n(x Big)int {
-	// Bytes_to_big(32,SM2_n,n);
-	if compare(x, n) == 0 {
-		return 1
-	} else {
-		return 0
-	}
-}
-
-func Test_Range(x Big)int {
-	var one, decr_n Big
-	one = Mirvar(0)
-	decr_n = Mirvar(0)
-	convert(1, one)
-	decr(n, 1, decr_n)
-	if (compare(x, one) < 0) || (compare(x, decr_n) > 0) { //这里原本是(compare(x, one) < 0) | (compare(x, decr_n) > 0)
-		return 1
-	}
-	return 0
-}
-
 func SM2_Sign(message []uint8,len int,ZA []uint8,rand []uint8,d []uint8,R []uint8,S []uint8) uint32 {
-	
+	if !SM2_INIT_FLAG {
+		SM2_Init()
+	}
+
 	a, b, n, p, Gx, Gy = para_a, para_b, para_n, para_p, para_Gx, para_Gy
 
 	var hash [32]uint8
@@ -97,7 +69,11 @@ func SM2_Sign(message []uint8,len int,ZA []uint8,rand []uint8,d []uint8,R []uint
 	return 0
 }
 
-func SM2_Verify(message []uint8,len int,ZA[]uint8,Px[]uint8,Py[]uint8,R[]uint8,S[]uint8) uint32 {
+func SM2_Verify(message []uint8, len int, ZA[]uint8, Px[]uint8, Py[]uint8, R[]uint8, S[]uint8) uint32 {
+	if !SM2_INIT_FLAG {
+		SM2_Init()
+	}
+
 	var hash [32]uint8
 	var M_len int = len + int(SM3_len)/8
 	var M []uint8 = nil
@@ -160,77 +136,13 @@ func SM2_Verify(message []uint8,len int,ZA[]uint8,Px[]uint8,Py[]uint8,R[]uint8,S
 		return ERR_DATA_MEMCMP
 	}
 }
-/*
-func SM2_SelfCheck()int {
-	//the private key
-	var dA = [32]uint8{0x39, 0x45, 0x20, 0x8f, 0x7b, 0x21, 0x44, 0xb1, 0x3f, 0x36, 0xe3, 0x8a, 0xc6, 0xd3, 0x9f,
-					   0x95, 0x88, 0x93, 0x93, 0x69, 0x28, 0x60, 0xb5, 0x1a, 0x42, 0xfb, 0x81, 0xef, 0x4d, 0xf7, 0xc5, 0xb8}
-	var rand = [32]uint8{0x59, 0x27, 0x6E, 0x27, 0xD5, 0x06, 0x86, 0x1A, 0x16, 0x68, 0x0F, 0x3A, 0xD9, 0xC0, 0x2D,
-						 0xCC, 0xEF, 0x3C, 0xC1, 0xFA, 0x3C, 0xDB, 0xE4, 0xCE, 0x6D, 0x54, 0xB8, 0x0D, 0xEA, 0xC1, 0xBC, 0x21}
-	//the public key
-	 var xA=[32]uint8{0x09,0xf9,0xdf,0x31,0x1e,0x54,0x21,0xa1,0x50,0xdd,0x7d,0x16,0x1e,0x4b,0xc5,
-	0xc6,0x72,0x17,0x9f,0xad,0x18,0x33,0xfc,0x07,0x6b,0xb0,0x8f,0xf3,0x56,0xf3,0x50,0x20};
-	var yA=[32]uint8{0xcc,0xea,0x49,0x0c,0xe2,0x67,0x75,0xa5,0x2d,0xc6,0xea,0x71,0x8c,0xc1,0xaa,
-	0x60,0x0a,0xed,0x05,0xfb,0xf3,0x5e,0x08,0x4a,0x66,0x32,0xf6,0x07,0x2d,0xa9,0xad,0x13};
-	//var xA [32]uint8
-	//var yA [32]uint8
-	var r [32]uint8
-	var s [32]uint8 // Signature424C 49 43 45 31 32 33 40 59 41 48 4F 4F 2E 43 4F 11
-	var IDA = [18]uint8{0x42, 0x4C, 0x49, 0x43, 0x45, 0x31, 0x32, 0x33, 0x40, 0x59, 0x41,
-						0x48, 0x4F, 0x4F, 0x2E, 0x43, 0x4F,0x11} //ASCII code of userA's identification
-	var IDA_len int = 18
-	var ENTLA = [2]uint8{0x00, 0x90}      //the length of userA's identification,presentation in ASCII code
-	str := "message digest"
-	var message =[]uint8(str) 	//the message to be signed
-	var len int = len(message)         //the length of message
-	var ZA [32]uint8                  	//ZA=Hash(ENTLA|| IDA|| a|| b|| Gx || Gy || xA|| yA)
-	N := IDA_len+2+SM2_NUMWORD*6
-	var Msg = make([]uint8,N,N)                         //210=IDA_len+2+SM2_NUMWORD*6
-	var temp int
-	var mip *Miracl = Mirsys(10000, 16)
-	mip.IOBASE = 16
-	temp = SM2_KeyGeneration(dA[:], xA[:], yA[:])
-	if temp != 0 {
-		return temp
-	}
-	// ENTLA|| IDA|| a|| b|| Gx || Gy || xA|| yA
-	memcpy(Msg[:], ENTLA[:], 2)
-	memcpy(Msg[2:N], IDA[:], IDA_len)
-	memcpy(Msg[2+IDA_len:N], SM2_a[:], SM2_NUMWORD)
-	memcpy(Msg[2+IDA_len+SM2_NUMWORD:N], SM2_b[:], SM2_NUMWORD)
-	memcpy(Msg[2+IDA_len+SM2_NUMWORD*2:N], SM2_Gx[:], SM2_NUMWORD)
-	memcpy(Msg[2+IDA_len+SM2_NUMWORD*3:N], SM2_Gy[:], SM2_NUMWORD)
-	memcpy(Msg[2+IDA_len+SM2_NUMWORD*4:N], xA[:], SM2_NUMWORD)
-	memcpy(Msg[2+IDA_len+SM2_NUMWORD*5:N], yA[:], SM2_NUMWORD)
-	SM3_256(Msg[:], N, ZA[:])
-	temp = SM2_Sign(message, len, ZA[:], rand[:], dA[:], r[:], s[:])
-	if temp != 0 {
-		//fmt.Print("s")
-		return temp
-	}
-	temp = SM2_Verify(message, len, ZA[:], xA[:], yA[:], r[:], s[:])
-	if temp != 0 {
-		//fmt.Print("s")
-		return temp
-	}
-	//fmt.Printf("%x\n",ZA)
-	//fmt.Printf("%x\n",r)
-	//fmt.Printf("%x\n",s)
-	return 0
-}
-*/
 
 func SM2_Si(user_priKey []uint8, IDA []uint8, Message []uint8) ([]uint8, []uint8, []uint8, uint32) {
-	// ??? 1000 or 10000 ?
-	var mip = Mirsys(10000, 16)
-	mip.IOBASE = 16
-	
-	//initiate SM2 curve
-	SM2_Init()
+	if !SM2_INIT_FLAG {
+		SM2_Init()
+	}
 
 	SM2_rand := Rand_Gen( SM2_n[:] )
-	//SM2_rand = []uint8{0x59, 0x27, 0x6E, 0x27, 0xD5, 0x06, 0x86, 0x1A, 0x16, 0x68, 0x0F, 0x3A, 0xD9, 0xC0, 0x2D,
-			//			 0xCC, 0xEF, 0x3C, 0xC1, 0xFA, 0x3C, 0xDB, 0xE4, 0xCE, 0x6D, 0x54, 0xB8, 0x0D, 0xEA, 0xC1, 0xBC, 0x21}
 
 	var tmp uint32 = 0
 	var PubKeyMerge = make([]uint8, SM2_NUMWORD*2)
@@ -257,15 +169,13 @@ func SM2_Si(user_priKey []uint8, IDA []uint8, Message []uint8) ([]uint8, []uint8
 	var s = make([]uint8, 32)// Signature424C 49 43 45 31 32 33 40 59 41 48 4F 4F 2E 43 4F 11
 
 	var IDA_len = len(IDA)
-	//var ENTLA = [2]uint8{0x00, 0x90}      //the length of userA's identification,presentation in ASCII code
 	var ENTLA = [2]uint8{ uint8((IDA_len*8)>>8), uint8(IDA_len*8)}      //the length of userA's identification,presentation in ASCII code
 	
 	var Msg_len int = len(Message)	//the length of Message
-	var ZA [32]uint8		//ZA=Hash(ENTLA|| IDA|| a|| b|| Gx || Gy || xA|| yA)
+	var ZA = make([]uint8, 32)		//ZA=Hash(ENTLA|| IDA|| a|| b|| Gx || Gy || xA|| yA)
 	
 	N := IDA_len+2+SM2_NUMWORD*6
 	var Msg = make([]uint8,N,N)	//210=IDA_len+2+SM2_NUMWORD*6
-
 	// ENTLA || IDA || a || b || Gx || Gy || xA || yA
 	memcpy(Msg[:], ENTLA[:], 2)
 	memcpy(Msg[2:N], IDA[:], IDA_len)
@@ -282,13 +192,10 @@ func SM2_Si(user_priKey []uint8, IDA []uint8, Message []uint8) ([]uint8, []uint8
 	return r, s, PubKeyMerge, 0
 }
 
-func SM2_Ve(user_pubKey []uint8, IDA []uint8, Message []uint8, R []uint8, S []uint8,) (bool, uint32) {
-	// ??? 1000 or 10000 ?
-	var mip = Mirsys(10000, 16)
-	mip.IOBASE = 16
-
-	//initiate SM2 curve
-	SM2_Init()
+func SM2_Ve(user_pubKey []uint8, IDA []uint8, Message []uint8, R []uint8, S []uint8) (bool, uint32) {
+	if !SM2_INIT_FLAG {
+		SM2_Init()
+	}
 
 	var tmp uint32 = 0
 

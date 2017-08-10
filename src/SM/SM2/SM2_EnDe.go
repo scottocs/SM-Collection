@@ -110,18 +110,14 @@ func SM2_Decrypt(dB Big,C[] uint8,Clen int,klen int,M[] uint8)uint32 {
 		Message []uint8
 */
 func SM2_En(user_priKey []uint8, Message []uint8) ([]uint8, uint32) {
-	// ???
-	mip = Mirsys(1000, 16)
-	mip.IOBASE = 16
-
-	//fmt.Printf("user_priKey:: %x\n", user_priKey)
-	//initiate SM2 curve
-	SM2_Init()
+	if !SM2_INIT_FLAG {
+		SM2_Init()
+	}
 
 	SM2_rand := Rand_Gen( SM2_n[:] )
 
 	var tmp uint32 = 0
-	var PubKeyMerge = [64]uint8{0}
+	var PubKeyMerge = make([]uint8, SM2_NUMWORD*2)
 
 	//generate key pair
 	var PriKey, PubKey_x, PubKey_y Big
@@ -164,15 +160,9 @@ func SM2_En(user_priKey []uint8, Message []uint8) ([]uint8, uint32) {
 		CyperText []uint8
 */
 func SM2_De(user_priKey []uint8, Cipher []uint8) ([]uint8, uint32) {
-	// ???
-	mip = Mirsys(1000, 16)
-	mip.IOBASE = 16
-
-	//fmt.Printf("user_priKey:: %x\n", user_priKey)
-	//initiate SM2 curve
-	SM2_Init()
-
-	//SM2_rand := Rand_Gen( SM2_n[:] )
+	if !SM2_INIT_FLAG {
+		SM2_Init()
+	}
 
 	var tmp uint32 = 0
 	var PubKeyMerge = [64]uint8{0}

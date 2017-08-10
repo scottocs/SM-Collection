@@ -42,8 +42,14 @@ var Gx, Gy, p, a, b, n Big  ////
 var G, nG *Epoint
 var mip *Miracl
 
+var SM2_INIT_FLAG bool = false
+
 // x3
 func SM2_Init() uint32 {
+	// ??? 1000 or 10000 ?
+	mip = Mirsys(10000, 16)
+	mip.IOBASE = 16
+
 	para_p = Mirvar(0)
 	para_a = Mirvar(0)
 	para_b = Mirvar(0)
@@ -70,11 +76,16 @@ func SM2_Init() uint32 {
 	if Point_at_infinity(nG)==0 { //test if the order of the point is n
 		return ERR_ORDER
 	}
+	SM2_INIT_FLAG = true
 	return 0
 }
 
 // x3
 func SM2_KeyGeneration(priKey Big, pubKey *Epoint) uint32 {
+	if !SM2_INIT_FLAG {
+		SM2_Init()
+	}
+
 	var x, y Big
 	x = Mirvar(0)
 	y = Mirvar(0)
@@ -87,54 +98,34 @@ func SM2_KeyGeneration(priKey Big, pubKey *Epoint) uint32 {
 	}
 }
 
-//func Test_Point(point *Epoint) uint32 {
-//	var x, y, x_3, tmp Big
-//	x = Mirvar(0)
-//	y = Mirvar(0)
-//	x_3 = Mirvar(0)
-//	tmp = Mirvar(0)
-//	//test if y^2=x^3+ax+b
-//	Epoint_get(point, x, y)
-//	Power(x, 3, para_p, x_3) //x_3=x^3 mod p
-//	Multiply(x, para_a, x)   //x=a*x
-//	Divide(x, para_p, tmp)   //x=a*x mod p , tmp=a*x/p
-//	Add(x_3, x, x)           //x=x^3+ax
-//	Add(x, para_b, x)        //x=x^3+ax+b
-//	Divide(x, para_p, tmp)   //x=x^3+ax+b mod p
-//	Power(y, 2, para_p, y)   //y=y^2 mod p
-//	if compare(x, y) != 0 {
-//		return ERR_NOT_VALID_POINT
-//	} else {
-//		return 0}
-//}
-//
-//func Test_PubKey(pubKey *Epoint) uint32 {
-//	var x, y, x_3, tmp Big
-//	var nP *Epoint
-//	x = Mirvar(0)
-//	y = Mirvar(0)
-//	x_3 = Mirvar(0)
-//	tmp = Mirvar(0)
-//	nP = Epoint_init()
-//	//test if the pubKey is the point at infinity
-//	if Point_at_infinity(pubKey) { // if pubKey is point at infinity, return error;
-//		return ERR_INFINITY_POINT
-//	}
-//	//test if x<p and y<p both hold
-//	Epoint_get(pubKey, x, y)
-//	if (compare(x, para_p) != -1) || (compare(y, para_p) != -1) {
-//		return ERR_NOT_VALID_ELEMENT
-//	}
-//	if Test_Point(pubKey) != 0 {
-//		return ERR_NOT_VALID_POINT
-//	}
-//	//test if the order of pubKey is equal to n
-//	Ecurve_mult(para_n, pubKey, nP) // nP=[n]P
-//	if Point_at_infinity(nP) == 0 { // if np is point NOT at infinity, return error;
-//		return ERR_ORDER
-//	}
-//	return 0
-//}
+func SM2_GetPubKey(user_priKey []uint8) ([]uint8, uint32) {
+	if !SM2_INIT_FLAG {
+		SM2_Init()
+	}
+
+	var tmp uint32 = 0
+	var PubKeyMerge = make([]uint8, SM2_NUMWORD*2)
+
+	//generate key pair
+	var PriKey, PubKey_x, PubKey_y Big
+	var PubKey *Epoint
+
+
+	PubKey_x = Mirvar(0)
+	PubKey_y = Mirvar(0)
+	PriKey = Mirvar(0)
+	PubKey = Epoint_init()
+	Bytes_to_big(len(user_priKey), user_priKey[:], PriKey) //PriKey is the standard private key's Big format
+
+	tmp = SM2_KeyGeneration(PriKey, PubKey)
+	if tmp != 0 {return nil, tmp}
+
+	Epoint_get(PubKey, PubKey_x, PubKey_y)
+	Big_to_bytes(SM2_NUMWORD, PubKey_x, PubKeyMerge[:], true)
+	Big_to_bytes(SM2_NUMWORD, PubKey_y, PubKeyMerge[SM2_NUMWORD:], true)
+
+	return PubKeyMerge, 0
+}
 
 // for SM2_EnDe
 func Test_Null(array []uint8,len int) int {
@@ -145,4 +136,48 @@ func Test_Null(array []uint8,len int) int {
 		}
 	}
 	return 1
+}
+
+// for SM2_Signature
+func Test_Zero(x Big) int {
+	if !SM2_INIT_FLAG {
+		SM2_Init()
+	}
+
+	var zero Big
+	zero = Mirvar(0)
+	if compare(x, zero) == 0 {
+		return 1
+	} else {
+		return 0
+	}
+}
+
+func Test_n(x Big)int {
+	if !SM2_INIT_FLAG {
+		SM2_Init()
+	}
+
+	// Bytes_to_big(32,SM2_n,n);
+	if compare(x, n) == 0 {
+		return 1
+	} else {
+		return 0
+	}
+}
+
+func Test_Range(x Big)int {
+	if !SM2_INIT_FLAG {
+		SM2_Init()
+	}
+
+	var one, decr_n Big
+	one = Mirvar(0)
+	decr_n = Mirvar(0)
+	convert(1, one)
+	decr(n, 1, decr_n)
+	if (compare(x, one) < 0) || (compare(x, decr_n) > 0) { //这里原本是(compare(x, one) < 0) | (compare(x, decr_n) > 0)
+		return 1
+	}
+	return 0
 }
